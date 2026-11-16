@@ -405,6 +405,16 @@ function sel(b){const v=b.closest('.cbox').querySelector('.val');const r=documen
 
 /* ---------- projects: data, 3D cards, covers, detail pages ---------- */
 const PROJECTS=[
+ {id:'labor-compliance-dashboard',wide:true,kind:'Dashboard · Workforce compliance',art:'overtime',title:'Labor Compliance Dashboard',
+  short:'Turns hours of manual overtime checking into seconds: upload the attendance Excel export and see every employee\'s weekly overtime, with risks flagged in red.',
+  stack:['React (Vite)','Node.js','Express','SheetJS'],
+  results:[['Seconds','instead of hours of manual checking'],['14h+','weekly OT flagged in red'],['<12h','weekly OT shown in green'],['1 click','export back to Excel']],
+  overview:['Checking overtime used to mean going through large attendance spreadsheets by hand. This dashboard reads the attendance export and does the totalling automatically.','The goal was simple: help managers spot overtime risks early, stay within labor limits, and spend less time on spreadsheets.'],
+  detects:['Upload the attendance Excel export','Every shift is read, and normal and double overtime are totalled per employee, week by week (Monday to Sunday)','Employees with 14+ hours of weekly OT are flagged in red','Employees under 12 hours are shown in green','A clear summary shows totals, a weekly breakdown, and each employee\'s remaining OT allowance','Export the full report back to Excel in one click'],
+  detectsTitle:'What it does',
+  flow:['A manager signs in securely.','They upload the attendance Excel export.','SheetJS parses the file and the system reads every shift.','Normal and double overtime are totalled per employee for each Monday to Sunday week.','Employees are flagged by weekly OT: red at 14+ hours, green under 12 hours.','The manager searches and filters by client and status, or opens a day-by-day view for any employee.','The full report is exported back to Excel in one click.'],
+  features:['Attendance Excel upload','Weekly normal and double OT totals per employee','Red flag at 14+ hours of weekly OT','Green status under 12 hours','Remaining OT allowance per employee','Summary with totals and weekly breakdown','Search and filters by client and status','Day-by-day view for each employee','Secure sign-in for managers','One-click Excel export'],
+  role:'Designed and built the full application: the React (Vite) dashboard, the Node.js and Express backend, the Excel parsing with SheetJS and the overtime calculation and flagging logic.'},
  {id:'sticker-asn-verification',wide:true,kind:'Mobile app · Warehouse operations',art:'sticker',title:'Sticker vs ASN Verification',
   short:'A mobile app that turns inbound carton checking into a quick photo check: snap the carton sticker and it is verified against the ASN field by field, with an instant verdict.',
   stack:['React Native (Expo)','Python','FastAPI','SQLAlchemy','OpenCV','RapidOCR'],
@@ -635,6 +645,19 @@ function drawArt(ctx,w,h,art,t){
       ctx.stroke();});
     const bw=Math.max(110,S*.4),bx=ox,by=h*.8;ctx.strokeStyle=stv[1];ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,22,11):ctx.rect(bx,by,bw,22);ctx.stroke();
     ctx.fillStyle=stv[1];ctx.textAlign='center';ctx.fillText(stv[0],bx+bw/2,by+15);ctx.textAlign='left';
+  }else if(art==='overtime'){
+    // weekly overtime bars per employee with the 12h and 14h limits
+    const names=['EMP 01','EMP 02','EMP 03','EMP 04','EMP 05'],hrs=[8,15.5,11,13,17],fs=Math.max(9,S*.04),lx=w*.08,bx=lx+Math.max(54,S*.2),bwMax=w*.9-bx,top=h*.16,rh=(h*.62)/names.length,maxH=20;
+    const grow=Math.min(1,((t*.35)%1.6)/.9);
+    ctx.font=`500 ${fs}px "JetBrains Mono", monospace`;
+    [12,14].forEach(v=>{const x=bx+bwMax*v/maxH;ctx.strokeStyle=v===14?'rgba(255,107,107,.7)':'rgba(95,227,161,.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,top-10);ctx.lineTo(x,top+rh*names.length);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=v===14?'#ff6b6b':'#5fe3a1';ctx.textAlign='center';ctx.fillText(v+'h',x,top-14);ctx.textAlign='left';});
+    names.forEach((n,i)=>{const y=top+i*rh+rh*.2,bh=rh*.5,v=hrs[i]*grow,c=hrs[i]>=14?'#ff6b6b':hrs[i]<12?'#5fe3a1':'#ffd166';
+      ctx.fillStyle='rgba(232,237,247,.7)';ctx.fillText(n,lx,y+bh*.75);
+      ctx.fillStyle='rgba(124,200,255,.08)';ctx.fillRect(bx,y,bwMax,bh);
+      ctx.fillStyle=c;ctx.fillRect(bx,y,bwMax*v/maxH,bh);
+      ctx.fillStyle='#e8edf7';ctx.fillText(v.toFixed(1)+'h',bx+bwMax*v/maxH+6,y+bh*.75);});
+    ctx.fillStyle=ice;ctx.fillText('WEEKLY OT · MON TO SUN',lx,h-14);
   }else if(art==='hrfleet'){
     // query bar typing a plain-English question
     const q='Show me all visas expiring in the next 60 days',n=Math.floor(((t*8)%(q.length+25)));
