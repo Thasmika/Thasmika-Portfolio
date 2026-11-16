@@ -405,6 +405,16 @@ function sel(b){const v=b.closest('.cbox').querySelector('.val');const r=documen
 
 /* ---------- projects: data, 3D cards, covers, detail pages ---------- */
 const PROJECTS=[
+ {id:'invoice-quantity-checker',wide:true,kind:'AI agent · 3PL operations',art:'qtymatch',title:'Invoice Quantity Checker',
+  short:'An AI agent that verifies supplier invoice quantities against warehouse receiving reports for a 3PL operation, and sends a line to human review whenever it is not sure.',
+  stack:['Python','FastAPI','LangGraph','Vision LLM','OpenCV','pandas','rapidfuzz','SQLite'],
+  results:[['4','matching layers'],['2','reads must agree'],['1:1','product assignment'],['0','lessons from guesses']],
+  overview:['In a 3PL operation, every supplier invoice has to be checked against what the warehouse actually received. I built the Invoice Quantity Checker to do that automatically, with the goal of an agent that is trusted, not just clever.','The hard parts were not the obvious ones: invoices arrive as tilted, faded phone photos, product names differ on both sides, and some suppliers bill in cases while the warehouse counts units. The lesson for me: in operations, an AI\'s real value is knowing when it isn\'t sure.'],
+  detects:['Tilted, faded phone photos: image clean-up, a zoomed table crop, and independent re-reads decided by majority vote','Different product names on both sides: layered matching (item code, learned matches, fuzzy rules, then an AI decision) with hard size rules and one-to-one assignment','Cases versus units: automatic case detection, with the conversion shown openly','AI misreads must never look like a short delivery: a mismatch is reported only when two readings agree; otherwise the line goes to human review'],
+  detectsTitle:'The hard parts and how they are solved',
+  flow:['Upload the supplier invoice photo and the warehouse receiving report.','OpenCV cleans up the image and crops a zoomed view of the table.','A vision LLM reads the table several times independently and a majority vote decides each value.','Each invoice line is matched to a received product: item code first, then learned matches, fuzzy rules and finally an AI decision.','Case quantities are detected and converted to units, with the conversion shown.','Quantities are compared: a mismatch is reported only when two readings agree, and anything uncertain goes to human review.','Confirmed results (matched product and agreeing quantity) are stored as lessons and shown on the performance dashboard.'],
+  features:['Image clean-up and zoomed table crop','Independent re-reads with majority vote','Layered product matching with hard size rules','One-to-one assignment','Automatic case-to-unit conversion, shown openly','Human review for uncertain lines','Learns only from confirmed results, never from guesses','Performance dashboard showing every lesson'],
+  role:'Designed and built the full agent: the image pipeline, the LangGraph workflow, the matching layers, the quantity verification rules, the learning store and the performance dashboard.'},
  {id:'invoice-checker',wide:true,kind:'AI automation · Finance',art:'invoice',title:'Smart AI Invoice Checker',
   short:'Validates Logistics Park tax invoices against client Excel working sheets and rate cards in seconds, with a Claude-powered AI agent for scanned or unusual PDFs.',
   stack:['Python','React','FastAPI','Claude AI','PDF parsing','Excel'],
@@ -571,6 +581,28 @@ function drawArt(ctx,w,h,art,t){
     const states=[['CORRECT','#5fe3a1'],['ERRORS','#ff6b6b'],['NEEDS REVIEW','#ffd166']],st=states[Math.floor(t*.35)%3];
     const bx=w*.92-S*.36,by=h-34;ctx.strokeStyle=st[1];ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,S*.36,22,11):ctx.rect(bx,by,S*.36,22);ctx.stroke();
     ctx.fillStyle=st[1];ctx.textAlign='center';ctx.fillText(st[0],bx+S*.18,by+15);ctx.textAlign='left';
+  }else if(art==='qtymatch'){
+    // tilted invoice photo on the left, receiving report on the right, lines matched across
+    const dw=Math.min(w*.26,S*.62),dh=h*.74,dy=h*.1,lx=w*.07,rx=w*.93-dw,rows=5,rh=(dh-44)/rows,fs=Math.max(8,S*.036);
+    const st=['ok','ok','bad','ok','rev'],col={ok:'#5fe3a1',bad:'#ff6b6b',rev:'#ffd166'},act=Math.floor(t*.9)%(rows+2);
+    ctx.save();ctx.translate(lx+dw/2,dy+dh/2);ctx.rotate(-.06);ctx.fillStyle='rgba(214,208,192,.85)';ctx.fillRect(-dw/2,-dh/2,dw,dh);
+    ctx.fillStyle='#0b1528';ctx.font=`700 ${fs*1.1}px "Bricolage Grotesque", sans-serif`;ctx.fillText('INVOICE',-dw/2+8,-dh/2+18);
+    for(let i=0;i<rows;i++){const y=-dh/2+34+i*rh;ctx.fillStyle='rgba(11,21,40,.3)';ctx.fillRect(-dw/2+8,y,dw*.5,4);ctx.fillRect(dw/2-8-dw*.2,y,dw*.2,4);}
+    ctx.restore();
+    ctx.fillStyle='rgba(232,237,247,.92)';ctx.fillRect(rx,dy,dw,dh);
+    ctx.fillStyle='#0b1528';ctx.font=`700 ${fs*1.1}px "Bricolage Grotesque", sans-serif`;ctx.fillText('RECEIVED',rx+8,dy+18);
+    for(let i=0;i<rows;i++){const y=dy+34+i*rh;ctx.fillStyle='rgba(11,21,40,.3)';ctx.fillRect(rx+8,y,dw*.5,4);ctx.fillRect(rx+dw-8-dw*.2,y,dw*.2,4);}
+    // match lines with a status dot in the middle
+    const x0=lx+dw+6,x1=rx-6,mx=(x0+x1)/2;
+    for(let i=0;i<rows;i++){const y=dy+36+i*rh,done=i<act,c=done?col[st[i]]:'rgba(124,200,255,.25)';
+      ctx.strokeStyle=c;ctx.lineWidth=done?1.5:1;ctx.setLineDash(done&&st[i]==='ok'?[]:[4,4]);ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.setLineDash([]);
+      if(done){ctx.fillStyle=c;ctx.beginPath();ctx.arc(mx,y,6,0,7);ctx.fill();ctx.strokeStyle='#04121f';ctx.lineWidth=2;ctx.beginPath();
+        if(st[i]==='ok'){ctx.moveTo(mx-3,y);ctx.lineTo(mx-.5,y+2.5);ctx.lineTo(mx+3,y-3);}else if(st[i]==='bad'){ctx.moveTo(mx-3,y-3);ctx.lineTo(mx+3,y+3);ctx.moveTo(mx+3,y-3);ctx.lineTo(mx-3,y+3);}else{ctx.moveTo(mx,y-3);ctx.lineTo(mx,y+.5);ctx.moveTo(mx,y+3);ctx.lineTo(mx,y+3.2);}
+        ctx.stroke();}}
+    // legend
+    ctx.font=`500 ${fs}px "JetBrains Mono", monospace`;ctx.textAlign='center';
+    [['MATCH','ok'],['MISMATCH','bad'],['REVIEW','rev']].forEach((l,i)=>{ctx.fillStyle=col[l[1]];ctx.fillText(l[0],mx+(i-1)*Math.max(58,(x1-x0)*.34),h-12);});
+    ctx.textAlign='left';
   }else if(art==='hrfleet'){
     // query bar typing a plain-English question
     const q='Show me all visas expiring in the next 60 days',n=Math.floor(((t*8)%(q.length+25)));
