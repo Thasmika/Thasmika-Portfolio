@@ -405,6 +405,16 @@ function sel(b){const v=b.closest('.cbox').querySelector('.val');const r=documen
 
 /* ---------- projects: data, 3D cards, covers, detail pages ---------- */
 const PROJECTS=[
+ {id:'sticker-asn-verification',wide:true,kind:'Mobile app · Warehouse operations',art:'sticker',title:'Sticker vs ASN Verification',
+  short:'A mobile app that turns inbound carton checking into a quick photo check: snap the carton sticker and it is verified against the ASN field by field, with an instant verdict.',
+  stack:['React Native (Expo)','Python','FastAPI','SQLAlchemy','OpenCV','RapidOCR'],
+  results:[['5','clear outcomes per scan'],['0','paid AI APIs for scanning'],['0','sticker photos kept'],['Docker + APK','easy to deploy']],
+  overview:['Every inbound carton\'s sticker has to match the ASN (Advance Shipping Notice). Done by hand, that means reading small print, searching a large Excel sheet and comparing field by field. It is slow, tiring and easy to get wrong.','I built this app for warehouse operations to turn that into a quick photo check: point the phone at the carton sticker, take a photo and get the result straight away.'],
+  detects:['Snap and check: point the phone at the carton sticker and take a photo. The server reads it with OCR (RapidOCR); no paid AI API is used for scanning','Smart matching: finds the carton in the ASN by Booking Key and carton number ("4 OF 19"), then compares each field','Instant results: MATCH, NOT MATCH, NEEDS REVIEW, ASN NOT FOUND or DUPLICATE, with the failing field highlighted','Built-in AI assistant: ask questions about the system, live data or any error, right inside the app','Admin and reports: ASN upload, sessions, users and exportable results, also available on the web','Privacy by design: sticker photos are thrown away right after each scan; only the check results are kept','Easy to deploy: the server runs in Docker; the Android app installs as an APK'],
+  detectsTitle:'Key features',
+  flow:['An admin uploads the ASN.','The operator points the phone at the carton sticker and takes a photo.','The server reads the sticker with OpenCV and RapidOCR.','The carton is found in the ASN by Booking Key and carton number.','Each field is compared and a verdict is returned: MATCH, NOT MATCH, NEEDS REVIEW, ASN NOT FOUND or DUPLICATE, with the failing field highlighted.','The photo is discarded and only the check result is saved for sessions and reports.'],
+  features:['Photo-based sticker check','Server-side OCR with RapidOCR','Matching by Booking Key and carton number','Field-by-field comparison with the failing field highlighted','Duplicate scan detection','Built-in AI assistant','Admin: ASN upload, sessions and users','Exportable results, also on the web','Photos discarded after each scan','Dockerised server and Android APK'],
+  role:'Designed and built the full system: the React Native (Expo) mobile app, the FastAPI backend, the OCR pipeline, the ASN matching logic, the AI assistant and the admin and reporting tools.'},
  {id:'invoice-quantity-checker',wide:true,kind:'AI agent · 3PL operations',art:'qtymatch',title:'Invoice Quantity Checker',
   short:'An AI agent that verifies supplier invoice quantities against warehouse receiving reports for a 3PL operation, and sends a line to human review whenever it is not sure.',
   stack:['Python','FastAPI','LangGraph','Vision LLM','OpenCV','pandas','rapidfuzz','SQLite'],
@@ -603,6 +613,28 @@ function drawArt(ctx,w,h,art,t){
     ctx.font=`500 ${fs}px "JetBrains Mono", monospace`;ctx.textAlign='center';
     [['MATCH','ok'],['MISMATCH','bad'],['REVIEW','rev']].forEach((l,i)=>{ctx.fillStyle=col[l[1]];ctx.fillText(l[0],mx+(i-1)*Math.max(58,(x1-x0)*.34),h-12);});
     ctx.textAlign='left';
+  }else if(art==='sticker'){
+    // phone photographing a carton sticker, field checks and a cycling verdict on the right
+    const pw=Math.min(S*.6,w*.28),ph=Math.min(h*.88,pw*1.8),px=w*.1,py=(h-ph)/2,fs=Math.max(9,S*.04);
+    ctx.strokeStyle='rgba(232,237,247,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect?ctx.roundRect(px,py,pw,ph,14):ctx.rect(px,py,pw,ph);ctx.stroke();
+    ctx.save();ctx.beginPath();ctx.rect(px+5,py+16,pw-10,ph-32);ctx.clip();
+    ctx.fillStyle='#8a6a47';ctx.fillRect(px+5,py+16,pw-10,ph-32);
+    const sx=px+12,sy0=py+ph*.2,sw=pw-24,sh=ph*.6;
+    ctx.fillStyle='rgba(240,242,247,.95)';ctx.fillRect(sx,sy0,sw,sh);
+    ctx.fillStyle='rgba(11,21,40,.35)';for(let i=0;i<5;i++)ctx.fillRect(sx+6,sy0+10+i*(sh-40)/5,sw*(i%2?.5:.72),4);
+    ctx.fillStyle='#0b1528';ctx.font=`700 ${Math.max(9,pw*.11)}px "JetBrains Mono", monospace`;ctx.fillText('4 OF 19',sx+6,sy0+sh-8);
+    const by0=py+16+((t*.45)%1)*(ph-32);ctx.strokeStyle=ice;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px+5,by0);ctx.lineTo(px+pw-5,by0);ctx.stroke();
+    ctx.restore();
+    const ox=px+pw+w*.07,phase=Math.floor(t*.35)%3,states=[['MATCH','#5fe3a1'],['NOT MATCH','#ff6b6b'],['NEEDS REVIEW','#ffd166']],stv=states[phase];
+    ctx.font=`500 ${fs}px "JetBrains Mono", monospace`;
+    ['Booking Key','Carton no.','Sticker fields','Not a duplicate'].forEach((l,i)=>{const y=h*.2+i*h*.14,c=i===2&&phase>0?stv[1]:'#5fe3a1';
+      ctx.fillStyle='rgba(232,237,247,.75)';ctx.fillText(l,ox+22,y+fs*.35);
+      ctx.fillStyle=c;ctx.beginPath();ctx.arc(ox+8,y,6,0,7);ctx.fill();
+      ctx.strokeStyle='#04121f';ctx.lineWidth=2;ctx.beginPath();
+      if(i!==2||phase===0){ctx.moveTo(ox+5,y);ctx.lineTo(ox+7.5,y+2.5);ctx.lineTo(ox+11,y-3);}else if(phase===1){ctx.moveTo(ox+5,y-3);ctx.lineTo(ox+11,y+3);ctx.moveTo(ox+11,y-3);ctx.lineTo(ox+5,y+3);}else{ctx.moveTo(ox+8,y-3);ctx.lineTo(ox+8,y+.5);ctx.moveTo(ox+8,y+3);ctx.lineTo(ox+8,y+3.2);}
+      ctx.stroke();});
+    const bw=Math.max(110,S*.4),bx=ox,by=h*.8;ctx.strokeStyle=stv[1];ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect?ctx.roundRect(bx,by,bw,22,11):ctx.rect(bx,by,bw,22);ctx.stroke();
+    ctx.fillStyle=stv[1];ctx.textAlign='center';ctx.fillText(stv[0],bx+bw/2,by+15);ctx.textAlign='left';
   }else if(art==='hrfleet'){
     // query bar typing a plain-English question
     const q='Show me all visas expiring in the next 60 days',n=Math.floor(((t*8)%(q.length+25)));
